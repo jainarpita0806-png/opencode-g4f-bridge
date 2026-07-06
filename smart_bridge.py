@@ -9,13 +9,29 @@ import os
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
+import platform
 
 # ==========================================
 # 1. CONFIGURATION & BACKENDS
 # ==========================================
 PORT = 1337
 TOP_N_MODELS = 20
-CONFIG_PATH = os.path.expanduser("~/.opencode-g4f-bridge/keys.json")
+
+def _get_bridge_config_dir():
+    """Get the bridge's own config directory (for API keys), cross-platform."""
+    if platform.system() == "Windows":
+        base = os.environ.get("APPDATA", os.path.expanduser("~"))
+        return os.path.join(base, "opencode-g4f-bridge")
+    return os.path.join(os.path.expanduser("~"), ".opencode-g4f-bridge")
+
+def _get_opencode_config_dir():
+    """Get OpenCode's config directory, cross-platform."""
+    if platform.system() == "Windows":
+        base = os.environ.get("APPDATA", os.path.expanduser("~"))
+        return os.path.join(base, "opencode")
+    return os.path.join(os.path.expanduser("~"), ".config", "opencode")
+
+CONFIG_PATH = os.path.join(_get_bridge_config_dir(), "keys.json")
 
 BACKENDS = {}
 
@@ -303,9 +319,9 @@ def generate_opencode_config(selected_models=None, do_test=False, top_n=None):
                 },
                 "models": chunk
             }
-    import os
-    config_path = os.path.expanduser("~/.config/opencode/opencode.json")
-    os.makedirs(os.path.dirname(config_path), exist_ok=True)
+    config_dir = _get_opencode_config_dir()
+    config_path = os.path.join(config_dir, "opencode.json")
+    os.makedirs(config_dir, exist_ok=True)
     with open(config_path, "w") as f:
         json.dump(config, f, indent=2)
     print(f"✅ {config_path} successfully updated!")
