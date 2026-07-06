@@ -122,12 +122,25 @@ def test_model_live(model_obj):
     
     print(f"  🧪 Testing model '{label}' via {backend} backend...")
     
+    # OpenCode typically sends massive context payloads (10k-30k+ tokens). 
+    # Models with tiny TPM/context limits (like some Groq proxies with 8k limits) 
+    # will pass a basic ping but crash OpenCode with a 413 Content Too Large error. 
+    # We simulate this by sending a large dummy payload (~15,000 tokens).
+    large_context = "This is a dummy context string to test large context windows. " * 1500
+    
     payload = {
         "model": model_id,
-        "messages": [{"role": "user", "content": "say hi"}],
+        "messages": [
+            {"role": "system", "content": f"You are a test agent. {large_context}"},
+            {"role": "user", "content": "say hi"}
+        ],
         "tools": [{
             "type": "function", 
-            "function": {"name": "test_tool", "description": "A test tool to verify compatibility."}
+            "function": {
+                "name": "test_tool", 
+                "description": "A test tool to verify compatibility.",
+                "parameters": {"type": "object", "properties": {}}
+            }
         }],
         "stream": False
     }
