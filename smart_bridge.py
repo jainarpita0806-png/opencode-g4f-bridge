@@ -125,6 +125,10 @@ def test_model_live(model_obj):
     payload = {
         "model": model_id,
         "messages": [{"role": "user", "content": "say hi"}],
+        "tools": [{
+            "type": "function", 
+            "function": {"name": "test_tool", "description": "A test tool to verify compatibility."}
+        }],
         "stream": False
     }
     
@@ -285,6 +289,13 @@ app.add_middleware(
 @app.post("/v1/chat/completions")
 async def chat_completions(request: Request):
     payload = await request.json()
+    
+    # OpenCode injects advanced parameters that many proxy networks (G4F/EAON) 
+    # crash on. We strip them out silently to ensure compatibility.
+    for key in ["reasoning_effort", "parallel_tool_calls"]:
+        if key in payload:
+            del payload[key]
+            
     requested_label = payload.get("model")
     
     print(f"\n" + "="*50)
