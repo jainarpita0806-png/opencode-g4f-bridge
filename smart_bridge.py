@@ -19,7 +19,7 @@ CONFIG_PATH = os.path.expanduser("~/.opencode-g4f-bridge/keys.json")
 
 BACKENDS = {}
 
-def load_or_prompt_keys():
+def load_or_prompt_keys(force_setup=False):
     os.makedirs(os.path.dirname(CONFIG_PATH), exist_ok=True)
     keys = {"G4F": "", "EAON": ""}
     
@@ -33,9 +33,14 @@ def load_or_prompt_keys():
             
     needs_save = False
     
-    if not keys.get("G4F") and not keys.get("EAON") and not os.path.exists(CONFIG_PATH):
+    if force_setup or (not keys.get("G4F") and not keys.get("EAON") and not os.path.exists(CONFIG_PATH)):
         print("🚀 Welcome to OpenCode G4F Bridge Setup!")
-        print("Please enter your API keys below. Press ENTER to skip a provider if you don't use it.\n")
+        if force_setup:
+            print(f"Current G4F Key: {'[SET]' if keys.get('G4F') else '[NOT SET]'}")
+            print(f"Current EAON Key: {'[SET]' if keys.get('EAON') else '[NOT SET]'}")
+            print("Press ENTER to keep existing key, or type a new one.\n")
+        else:
+            print("Please enter your API keys below. Press ENTER to skip a provider if you don't use it.\n")
         
         g4f = input("Enter your G4F API Key: ").strip()
         if g4f:
@@ -46,6 +51,9 @@ def load_or_prompt_keys():
         if eaon:
             keys["EAON"] = eaon
             needs_save = True
+            
+        if force_setup and not needs_save:
+            print("No keys updated.")
             
     if needs_save:
         with open(CONFIG_PATH, "w") as f:
@@ -61,8 +69,8 @@ def load_or_prompt_keys():
         print("❌ CRITICAL ERROR: No API keys provided. The bridge cannot operate without at least one provider.")
         sys.exit(1)
 
-# Run setup
-load_or_prompt_keys()
+# We wait to run setup until after argparse is parsed
+# so we can check for the --setup flag.
 
 # Map of { label : model_object }
 # model_object = {"id": str, "label": str, "model": str, "requests": int, "backend": str}
@@ -434,7 +442,16 @@ if __name__ == "__main__":
     parser.add_argument("-m", "--model", type=str, help="Search for a specific model to use")
     parser.add_argument("-t", "--test", action="store_true", help="Test the selected models before adding them")
     parser.add_argument("-b", "--best", nargs='?', const=15, default=None, type=int, help="Extract top N models from G4F (defaults to 15) and ALL models from EAON")
+    parser.add_argument("-s", "--setup", action="store_true", help="Run the API key setup wizard to update keys")
     args = parser.parse_args()
+    
+    # Run setup wizard (either forced via flag, or automatically on first run)
+    load_or_prompt_keys(force_setup=args.setup)
+    
+    if args.setup:
+        # If user ONLY ran --setup, exit after updating keys
+        if not args.model and args.best is None:
+            sys.exit(0)
     
     if args.model:
         all_models = get_all_models()
