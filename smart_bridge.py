@@ -72,42 +72,44 @@ def get_all_models():
     all_models = []
     
     # 1. Fetch from G4F
-    print(f"Fetching models from {BACKENDS['G4F']['url']}/models ...")
-    try:
-        resp = requests.get(f"{BACKENDS['G4F']['url']}/models", headers={"Authorization": f"Bearer {BACKENDS['G4F']['key']}"})
-        resp.raise_for_status()
-        data = resp.json().get("data", [])
-        for m in data:
-            if m.get("id") == "auto": continue
-            all_models.append({
-                "id": m.get("id"),
-                "label": m.get("label", m.get("id")),
-                "model": m.get("model", ""),
-                "requests": m.get("requests", 0),
-                "backend": "G4F"
-            })
-    except Exception as e:
-        print(f"❌ Failed to fetch G4F models: {e}")
+    if "G4F" in BACKENDS:
+        print(f"Fetching models from {BACKENDS['G4F']['url']}/models ...")
+        try:
+            resp = requests.get(f"{BACKENDS['G4F']['url']}/models", headers={"Authorization": f"Bearer {BACKENDS['G4F']['key']}"})
+            resp.raise_for_status()
+            data = resp.json().get("data", [])
+            for m in data:
+                if m.get("id") == "auto": continue
+                all_models.append({
+                    "id": m.get("id"),
+                    "label": m.get("label", m.get("id")),
+                    "model": m.get("model", ""),
+                    "requests": m.get("requests", 0),
+                    "backend": "G4F"
+                })
+        except Exception as e:
+            print(f"❌ Failed to fetch G4F models: {e}")
         
     # 2. Fetch from EAON
-    print(f"Fetching models from {BACKENDS['EAON']['url']}/models ...")
-    try:
-        resp = requests.get(f"{BACKENDS['EAON']['url']}/models", headers={"Authorization": f"Bearer {BACKENDS['EAON']['key']}"})
-        resp.raise_for_status()
-        data = resp.json().get("data", [])
-        for m in data:
-            if m.get("id") == "auto": continue
-            # EAON models just have an 'id', we format the label for UI clarity
-            model_id = m.get("id")
-            all_models.append({
-                "id": model_id,
-                "label": f"EAON:{model_id}",
-                "model": model_id,
-                "requests": 0, # EAON doesn't expose usage metrics
-                "backend": "EAON"
-            })
-    except Exception as e:
-        print(f"❌ Failed to fetch EAON models: {e}")
+    if "EAON" in BACKENDS:
+        print(f"Fetching models from {BACKENDS['EAON']['url']}/models ...")
+        try:
+            resp = requests.get(f"{BACKENDS['EAON']['url']}/models", headers={"Authorization": f"Bearer {BACKENDS['EAON']['key']}"})
+            resp.raise_for_status()
+            data = resp.json().get("data", [])
+            for m in data:
+                if m.get("id") == "auto": continue
+                # EAON models just have an 'id', we format the label for UI clarity
+                model_id = m.get("id")
+                all_models.append({
+                    "id": model_id,
+                    "label": f"EAON:{model_id}",
+                    "model": model_id,
+                    "requests": 0, # EAON doesn't expose usage metrics
+                    "backend": "EAON"
+                })
+        except Exception as e:
+            print(f"❌ Failed to fetch EAON models: {e}")
         
     # Sort all combined models by requests (descending)
     all_models = sorted(all_models, key=lambda x: x["requests"], reverse=True)
