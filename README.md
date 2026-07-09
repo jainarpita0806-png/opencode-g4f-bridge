@@ -40,7 +40,7 @@ A powerful, smart, and fully automatic backend proxy bridge designed specificall
 ## Usage
 
 ### 1. Extract Top Models (Recommended)
-Automatically extract the Top 15 most popular models from G4F, and ALL models from EAON:
+Automatically extract the Top 15 most popular models from G4F, and plus teir models from EAON 
 ```bash
 python smart_bridge.py -b
 ```
